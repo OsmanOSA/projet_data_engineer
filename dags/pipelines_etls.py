@@ -124,22 +124,7 @@ def extract_energy_solar_pv():
         return api_response.json()
     else:
         raise Exception(f"Échec de la récupération des données : {api_response.status_code}")
-
-# @task
-# def extract_weather_data():
-
-#     # Make sure all required weather variables are listed here
-#     METEO_API_KEY  = os.getenv("METEO_API_KEY")
-#     LAT = 48.8566
-#     LON = 2.3522
-#     URL = f"https://api.openweathermap.org/data/2.5/weather?lat={LAT}&lon={LON}&units=metric&lang=fr&appid={METEO_API_KEY}"
-    
-#     # Envoi de la requête GET
-#     responses = requests.get(URL)
-#     if responses.status_code == 200:
-#         return responses.json()
-#     else:
-#         raise Exception(f"Échec de la récupération des données : {responses.status_code}")    
+  
 
 @task
 def transform_consumption(raw_consumptions):
@@ -243,7 +228,6 @@ with DAG(
     with TaskGroup("Data_ingestion") as extract_group: 
         raw_consumption = extract_energy_consumption()
         raw_solar = extract_energy_solar_pv()
-        #raw_weather = extract_weather_data()
 
     with TaskGroup("Transform_datasets") as transform_group:
 
