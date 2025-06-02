@@ -1,0 +1,52 @@
+.venv
+.env
+
+# Fichiers système Windows
+$RECYCLE.BIN/
+System Volume Information/
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+DumpStack.log.tmp
+
+# Logs Airflow
+logs/
+airflow.db
+airflow.cfg
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environnements virtuels
+venv/
+env/
+.venv/
+.env/
+
+# Fichiers de configuration d'éditeur/code
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Fichiers dotenv
+.env
+.env.*
+
+# Cache et build Python
+*.egg-info/
+dist/
+build/
+
+# MacOS
+.DS_Store
+
+# Autres fichiers temporaires
+*.tmp
+*.temp
+
+# Ignore fichiers SQLite (si tu en as)
+*.sqlite3
