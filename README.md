@@ -13,6 +13,13 @@ Ce projet implémente un pipeline ETL (Extract, Transform, Load) automatisé pou
 
 ## Architecture du Système
 
+![Architecture du Système](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/votre-username/projet_titre_rncp_data_engineer/main/docs/architecture.puml)
+
+> **Note** : Remplacez `votre-username` par votre nom d'utilisateur GitHub dans l'URL ci-dessus pour afficher le diagramme.
+
+<details>
+<summary>Code PlantUML (cliquer pour voir)</summary>
+
 ```plantuml
 @startuml
 !include <C4/C4_Container>
@@ -52,6 +59,8 @@ SCHEDULER --> WORKERS : "Orchestration"
 
 @enduml
 ```
+
+</details>
 
 ### Stack Technique
 

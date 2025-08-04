@@ -1,0 +1,37 @@
+@startuml
+!include <C4/C4_Container>
+
+title Architecture du Système - Pipeline ETL Énergétique
+
+package "Sources de Données" {
+    [API RTE - Consommation] as RTE_CONSO
+    [API RTE - Production Solaire] as RTE_PROD
+    [OpenWeatherMap API] as WEATHER_API
+}
+
+package "Apache Airflow" {
+    [DAG Energy ETL] as DAG_ENERGY
+    [DAG Weather ETL] as DAG_WEATHER
+}
+
+package "Infrastructure" {
+    database "PostgreSQL Database" as POSTGRES
+    [Redis Cache] as REDIS
+    [Airflow Webserver] as WEBSERVER
+    [Airflow Scheduler] as SCHEDULER
+    [Celery Workers] as WORKERS
+}
+
+' Relations entre composants
+RTE_CONSO --> DAG_ENERGY : "Données consommation"
+RTE_PROD --> DAG_ENERGY : "Données production"
+WEATHER_API --> DAG_WEATHER : "Données météo"
+
+DAG_ENERGY --> POSTGRES : "Stockage énergies"
+DAG_WEATHER --> POSTGRES : "Stockage météo"
+
+REDIS --> WORKERS : "File de messages"
+WEBSERVER --> SCHEDULER : "Interface admin"
+SCHEDULER --> WORKERS : "Orchestration"
+
+@enduml
