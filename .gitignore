@@ -11,7 +11,7 @@ logs/
 airflow.db
 airflow.cfg
 *.log
-Procfile
+Procfile/
 
 # Python
 __pycache__/
@@ -47,9 +47,12 @@ dataset_historique_meteoçfrancaise.csv
 dataset_Production_PV_MW.csv
 
 scripts/*
-etl_production.py
-forecating_conso.ipynb
-historique_conso.py
-historique_meteo.py
-historique_production.py
-historique_production.py
+etl_production/
+forecating_conso/
+historique_conso/
+historique_meteo/
+historique_production/
+historique_production/
+
+PARAMETRAGE_SAUVEGARDE.md
+
