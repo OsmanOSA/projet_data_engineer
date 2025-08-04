@@ -13,54 +13,7 @@ Ce projet implémente un pipeline ETL (Extract, Transform, Load) automatisé pou
 
 ## Architecture du Système
 
-![Architecture du Système](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/votre-username/projet_titre_rncp_data_engineer/main/docs/architecture.puml)
-
-> **Note** : Remplacez `votre-username` par votre nom d'utilisateur GitHub dans l'URL ci-dessus pour afficher le diagramme.
-
-<details>
-<summary>Code PlantUML (cliquer pour voir)</summary>
-
-```plantuml
-@startuml
-!include <C4/C4_Container>
-
-title Architecture du Système - Pipeline ETL Énergétique
-
-package "Sources de Données" {
-    [API RTE - Consommation] as RTE_CONSO
-    [API RTE - Production Solaire] as RTE_PROD
-    [OpenWeatherMap API] as WEATHER_API
-}
-
-package "Apache Airflow" {
-    [DAG Energy ETL] as DAG_ENERGY
-    [DAG Weather ETL] as DAG_WEATHER
-}
-
-package "Infrastructure" {
-    database "PostgreSQL Database" as POSTGRES
-    [Redis Cache] as REDIS
-    [Airflow Webserver] as WEBSERVER
-    [Airflow Scheduler] as SCHEDULER
-    [Celery Workers] as WORKERS
-}
-
-' Relations entre composants
-RTE_CONSO --> DAG_ENERGY : "Données consommation"
-RTE_PROD --> DAG_ENERGY : "Données production"
-WEATHER_API --> DAG_WEATHER : "Données météo"
-
-DAG_ENERGY --> POSTGRES : "Stockage énergies"
-DAG_WEATHER --> POSTGRES : "Stockage météo"
-
-REDIS --> WORKERS : "File de messages"
-WEBSERVER --> SCHEDULER : "Interface admin"
-SCHEDULER --> WORKERS : "Orchestration"
-
-@enduml
-```
-
-</details>
+![Architecture du Système](images/architecture_etl.png)
 
 ### Stack Technique
 
