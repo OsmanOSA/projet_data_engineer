@@ -1,6 +1,3 @@
-.venv
-.env
-
 # Fichiers système Windows
 $RECYCLE.BIN/
 System Volume Information/
@@ -14,6 +11,7 @@ logs/
 airflow.db
 airflow.cfg
 *.log
+Procfile
 
 # Python
 __pycache__/
@@ -21,21 +19,13 @@ __pycache__/
 *$py.class
 
 # Environnements virtuels
-venv/
-env/
 .venv/
-.env/
 
 # Fichiers de configuration d'éditeur/code
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# Fichiers dotenv
-.env
-.env.*
-
 # Cache et build Python
 *.egg-info/
 dist/
@@ -50,3 +40,16 @@ build/
 
 # Ignore fichiers SQLite (si tu en as)
 *.sqlite3
+dataset_historique_consommation_francaise_MW.csv
+dataset_historique_Production_Solaire_MW.csv
+dataset_historique_consommation_francaise.csv
+dataset_historique_meteoçfrancaise.csv
+dataset_Production_PV_MW.csv
+
+scripts/*
+etl_production.py
+forecating_conso.ipynb
+historique_conso.py
+historique_meteo.py
+historique_production.py
+historique_production.py

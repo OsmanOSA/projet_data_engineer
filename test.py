@@ -188,7 +188,7 @@ def extract_weather_data():
 #         # Créer une table si elle n'existe pas 
 #         cursor.execute("""
 #         CREATE TABLE IF NOT EXISTS energies (
-#             Date TIMESTAMP,
+#             timestamp TIMESTAMP,
 #             Consommations FLOAT,
 #             Production_PV FLOAT
 #         );
@@ -205,7 +205,7 @@ def transform_consumption(raw_consumptions):
         
     df_list = [
                 {
-                    "Date": value["start_date"],
+                    "timestamp": value["start_date"],
                     "Consommations": value["value"]
                 }
                 for entry in raw_consumptions
@@ -214,12 +214,12 @@ def transform_consumption(raw_consumptions):
 
     dataframe_consumption = pd.DataFrame(df_list)
     # Conversion de la colonne date en datetime avec fuseau horaire UTC
-    dataframe_consumption['Date'] = pd.to_datetime(dataframe_consumption["Date"], 
+    dataframe_consumption['timestamp'] = pd.to_datetime(dataframe_consumption["timestamp"], 
                                                    format="%Y-%m-%dT%H:%M:%S%z", utc=True)
     
-    dataframe_consumption.set_index('Date', inplace=True)
+    dataframe_consumption.set_index('timestamp', inplace=True)
     df_hourly = dataframe_consumption.resample('h').mean().reset_index()
-    df_hourly["Date"] = df_hourly['Date'].dt.strftime("%Y-%m-%d %H:%M")
+    df_hourly["timestamp"] = df_hourly['timestamp'].dt.strftime("%Y-%m-%d %H:%M")
 
     return df_hourly
 
@@ -230,7 +230,7 @@ def transform_solar_energy(raw_solar_energy):
     data_lst = [
 
             {
-                "Date": valeur["start_date"],
+                "timestamp": valeur["start_date"],
                 "Production_PV": valeur["value"]
             }
 
@@ -241,8 +241,8 @@ def transform_solar_energy(raw_solar_energy):
 
     dataframe_solar = pd.DataFrame(data_lst)
     # Conversion de la colonne date en datetime avec fuseau horaire UTC
-    dataframe_solar['Date'] = pd.to_datetime(dataframe_solar["Date"], format="%Y-%m-%dT%H:%M:%S%z", utc=True)
-    dataframe_solar['Date'] = dataframe_solar['Date'].dt.strftime("%Y-%m-%d %H:%M")
+    dataframe_solar['timestamp'] = pd.to_datetime(dataframe_solar["timestamp"], format="%Y-%m-%dT%H:%M:%S%z", utc=True)
+    dataframe_solar['timestamp'] = dataframe_solar['timestamp'].dt.strftime("%Y-%m-%d %H:%M")
     return dataframe_solar
 
 
@@ -250,8 +250,8 @@ def transform_solar_energy(raw_solar_energy):
 def load_datasets(dataframe_consump, dataframe_solar):
     # Inserer les données transformées dans la table
         
-    # Jointure sur la colonne Date (inner join pour les valeurs communes uniquement)
-    df_merged = pd.merge(dataframe_consump, dataframe_solar, on='Date')
+    # Jointure sur la colonne timestamp (inner join pour les valeurs communes uniquement)
+    df_merged = pd.merge(dataframe_consump, dataframe_solar, on='timestamp')
 
 
     pg_hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
@@ -261,7 +261,7 @@ def load_datasets(dataframe_consump, dataframe_solar):
     # Créer une table si elle n'existe pas 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS energies (
-            Date TIMESTAMP,
+            timestamp TIMESTAMP,
             Consommations FLOAT,
             Production_PV FLOAT
         );
@@ -269,12 +269,12 @@ def load_datasets(dataframe_consump, dataframe_solar):
     
     # Préparation des lignes à insérer
     data = [
-        (row["Date"], row["Consommations"], row["Production_PV"])
+        (row["timestamp"], row["Consommations"], row["Production_PV"])
         for _, row in df_merged.iterrows()
     ]
 
     cursor.executemany("""
-            INSERT INTO energies (Date, Consommations, Production_PV)
+            INSERT INTO energies (timestamp, Consommations, Production_PV)
             VALUES (%s, %s, %s)
         """, data)
 

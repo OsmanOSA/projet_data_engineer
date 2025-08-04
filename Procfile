@@ -1,4 +1,2 @@
-web: airflow webserver
-scheduler: airflow scheduler
-worker: airflow celery worker
-triggerer: airflow triggerer
+release: airflow db init && airflow users create-admin
+web: airflow webserver -p $PORT & airflow scheduler
