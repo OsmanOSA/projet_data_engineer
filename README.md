@@ -13,35 +13,44 @@ Ce projet implémente un pipeline ETL (Extract, Transform, Load) automatisé pou
 
 ## Architecture du Système
 
-```mermaid
-graph TB
-    subgraph "Sources de Données"
-        A[API RTE - Consommation]
-        B[API RTE - Production Solaire]
-        C[OpenWeatherMap API]
-    end
-    
-    subgraph "Apache Airflow"
-        D[DAG Energy ETL]
-        E[DAG Weather ETL]
-    end
-    
-    subgraph "Infrastructure"
-        F[PostgreSQL Database]
-        G[Redis Cache]
-        H[Airflow Webserver]
-        I[Airflow Scheduler]
-        J[Celery Workers]
-    end
-    
-    A --> D
-    B --> D
-    C --> E
-    D --> F
-    E --> F
-    G --> J
-    H --> I
-    I --> J
+```plantuml
+@startuml
+!include <C4/C4_Container>
+
+title Architecture du Système - Pipeline ETL Énergétique
+
+package "Sources de Données" {
+    [API RTE - Consommation] as RTE_CONSO
+    [API RTE - Production Solaire] as RTE_PROD
+    [OpenWeatherMap API] as WEATHER_API
+}
+
+package "Apache Airflow" {
+    [DAG Energy ETL] as DAG_ENERGY
+    [DAG Weather ETL] as DAG_WEATHER
+}
+
+package "Infrastructure" {
+    database "PostgreSQL Database" as POSTGRES
+    [Redis Cache] as REDIS
+    [Airflow Webserver] as WEBSERVER
+    [Airflow Scheduler] as SCHEDULER
+    [Celery Workers] as WORKERS
+}
+
+' Relations entre composants
+RTE_CONSO --> DAG_ENERGY : "Données consommation"
+RTE_PROD --> DAG_ENERGY : "Données production"
+WEATHER_API --> DAG_WEATHER : "Données météo"
+
+DAG_ENERGY --> POSTGRES : "Stockage énergies"
+DAG_WEATHER --> POSTGRES : "Stockage météo"
+
+REDIS --> WORKERS : "File de messages"
+WEBSERVER --> SCHEDULER : "Interface admin"
+SCHEDULER --> WORKERS : "Orchestration"
+
+@enduml
 ```
 
 ### Stack Technique

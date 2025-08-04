@@ -1,6 +1,6 @@
-# 📊 TABLEAU DE PARAMÉTRAGE DU SYSTÈME DE SAUVEGARDE
+# TABLEAU DE PARAMÉTRAGE DU SYSTÈME DE SAUVEGARDE
 
-## 🎯 **Paramètres Principaux de Configuration**
+## **Paramètres Principaux de Configuration**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
@@ -10,18 +10,18 @@
 | **Catchup** | `False` | `backup_maintenance_dag.py` | Pas de rattrapage historique |
 | **Exécutions simultanées** | `max_active_runs=1` | `backup_maintenance_dag.py` | Une seule sauvegarde à la fois |
 
-## 🔒 **Paramètres de Sécurité et Fiabilité**
+## **Paramètres de Sécurité et Fiabilité**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
-| **Tentatives de retry** | `5 tentatives` ⭐ | `backup_maintenance_dag.py` | Résistance renforcée aux pannes |
+| **Tentatives de retry** | `5 tentatives`  | `backup_maintenance_dag.py` | Résistance renforcée aux pannes |
 | **Délai entre retry** | `10 minutes` | `backup_maintenance_dag.py` | Attente avant nouvelle tentative |
 | **Timeout maximum** | `30 minutes` | `backup_maintenance_dag.py` | Protection contre les blocages |
 | **Email en cas d'échec** | `False` | `backup_maintenance_dag.py` | Notifications par email |
 | **Email sur retry** | `False` | `backup_maintenance_dag.py` | Notifications retry |
 | **Permissions répertoires** | `755` (AIRFLOW_UID:0) | `setup_backup_system.sh` | Sécurité des accès fichiers |
 
-## 🔐 **Paramètres de Contrôle d'Accès Base de Données (NOUVEAU ⭐)**
+## **Paramètres de Contrôle d'Accès Base de Données (NOUVEAU)**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
@@ -41,7 +41,7 @@
 | **Surveillance connexions** | Vue `active_connections` | `setup_database_security.sql` | Monitoring temps réel |
 | **Audit sécurité** | Vue `security_audit_summary` | `setup_database_security.sql` | Rapport activités 7 jours |
 
-## 📁 **Paramètres de Stockage et Fichiers**
+## **Paramètres de Stockage et Fichiers**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
@@ -52,7 +52,7 @@
 | **Taille limite alerte** | `500 MB` | `backup_maintenance_dag.py` | Détection d'anomalies |
 | **Niveau de compression** | `gzip -9` (maximum) | `backup_maintenance_dag.py` | Optimisation espace stockage |
 
-## 🗄️ **Paramètres Base de Données PostgreSQL**
+## **Paramètres Base de Données PostgreSQL**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
@@ -64,7 +64,7 @@
 | **Port par défaut** | `5432` | `backup_maintenance_dag.py` | Port standard PostgreSQL |
 | **Authentification** | Variable `PGPASSWORD` | `backup_maintenance_dag.py` | Sécurité connexion |
 
-## 📊 **Paramètres de Monitoring et Logs**
+## **Paramètres de Monitoring et Logs**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
@@ -75,7 +75,7 @@
 | **Health checks** | Vérification DB avant sauvegarde | `backup_maintenance_dag.py` | Prévention sauvegardes corrompues |
 | **Tags du DAG** | `backup, maintenance, database, postgresql` | `backup_maintenance_dag.py` | Classification et filtrage |
 
-## ⚙️ **Paramètres des Scripts Utilitaires**
+## **Paramètres des Scripts Utilitaires**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
@@ -85,7 +85,7 @@
 | **Générateur métriques** | `backup_metrics.py` | `setup_backup_system.sh` | Monitoring avancé |
 | **Répertoire scripts** | `/opt/airflow/scripts` | `setup_backup_system.sh` | Centralisation utilitaires |
 
-## 🔍 **Paramètres de Vérification et Validation**
+## **Paramètres de Vérification et Validation**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
@@ -95,7 +95,7 @@
 | **Confirmation restauration** | Prompt `yes/no` obligatoire | `restore_backup.sh` | Protection suppression accidentelle |
 | **Vérification post-restauration** | `\dt` pour lister tables | `restore_backup.sh` | Contrôle restauration réussie |
 
-## 🚨 **Paramètres d'Alertes et Notifications (Optionnels)**
+## **Paramètres d'Alertes et Notifications (Optionnels)**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
@@ -105,7 +105,7 @@
 | **Sauvegarde cloud** | `ENABLE_CLOUD_BACKUP=false` | `backup_config.env` | Backup externe AWS S3 |
 | **Région AWS** | `eu-west-1` | `backup_config.env` | Localisation services cloud |
 
-## 📈 **Paramètres de Performance**
+## **Paramètres de Performance**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
@@ -115,7 +115,7 @@
 | **Parallélisation** | Tasks séquentiels | `backup_maintenance_dag.py` | Éviter conflits ressources |
 | **Calcul ratio compression** | Automatique | `backup_maintenance_dag.py` | Monitoring efficacité |
 
-## 🔧 **Paramètres Techniques Avancés**
+## **Paramètres Techniques Avancés**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
@@ -125,7 +125,7 @@
 | **Format docstring** | numpydoc standard | `backup_maintenance_dag.py` | Documentation professionnelle |
 | **Variables environnement** | Automatiques via Hook | `backup_maintenance_dag.py` | Configuration dynamique |
 
-## 📋 **Paramètres de Documentation**
+## **Paramètres de Documentation**
 
 | **Paramètre** | **Valeur / Règle** | **Fichier** | **Objectif** |
 |---------------|-------------------|-------------|--------------|
@@ -135,29 +135,29 @@
 | **README système** | `README.md` complet | `README.md` | Guide utilisateur |
 | **Ce fichier paramètrage** | `PARAMETRAGE_SAUVEGARDE.md` | Ce fichier | Référence technique |
 
-## 🎯 **Résumé des Paramètres Critiques**
+## **Résumé des Paramètres Critiques**
 
 | **Catégorie** | **Paramètres Essentiels** | **Statut** |
 |---------------|---------------------------|------------|
-| **⏰ Temporisation** | Quotidien 2h00, retry 5×10min | ✅ Configuré |
-| **💾 Stockage** | 30 jours, gzip -9, 500MB limit | ✅ Configuré |
-| **🔒 Sécurité** | Permissions, validation, timeout | ✅ Configuré |
-| **🔐 Contrôle d'accès** | Rôles, RLS, audit, utilisateurs ⭐ | ✅ Configuré |
-| **📊 Monitoring** | Logs, métriques, rapports | ✅ Configuré |
-| **🔄 Automatisation** | DAG Airflow, nettoyage auto | ✅ Configuré |
-| **🚨 Alertes** | Email, Slack, cloud (opt.) | ⚙️ Configurable |
+| ** Temporisation** | Quotidien 2h00, retry 5×10min | Configuré |
+| **Stockage** | 30 jours, gzip -9, 500MB limit | Configuré |
+| ** Sécurité** | Permissions, validation, timeout | Configuré |
+| ** Contrôle d'accès** | Rôles, RLS, audit, utilisateurs  | Configuré |
+| ** Monitoring** | Logs, métriques, rapports | Configuré |
+| ** Automatisation** | DAG Airflow, nettoyage auto | Configuré |
+| ** Alertes** | Email, Slack, cloud (opt.) | Configurable |
 
 ---
 
-## 📝 **Notes de Configuration**
+## **Notes de Configuration**
 
 1. **Modification des paramètres** : Éditer les fichiers correspondants puis redémarrer Airflow
 2. **Test après modification** : Utiliser `./scripts/verify_backup.sh`
 3. **Monitoring actif** : Interface Airflow → DAG → Graph View
 4. **Logs détaillés** : Interface Airflow → DAG → Logs
 5. **Métriques avancées** : Exécuter `python3 scripts/backup_metrics.py`
-6. **⭐ Configuration contrôle d'accès** : Exécuter `./scripts/setup_database_access_control.sh`
-7. **⭐ Test des permissions** : Utiliser `./scripts/setup_database_access_control.sh -t`
-8. **⭐ Surveillance sécurité** : Consulter les vues `active_connections` et `security_audit_summary`
+6. **Configuration contrôle d'accès** : Exécuter `./scripts/setup_database_access_control.sh`
+7. **Test des permissions** : Utiliser `./scripts/setup_database_access_control.sh -t`
+8. **Surveillance sécurité** : Consulter les vues `active_connections` et `security_audit_summary`
 
-**✅ Système configuré pour la production avec contrôle d'accès sécurisé et 5 tentatives de retry !** 🚀🔐 
+**Système configuré pour la production avec contrôle d'accès sécurisé et 5 tentatives de retry !**  
