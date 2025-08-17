@@ -6,31 +6,19 @@ Ce projet implémente un pipeline ETL (Extract, Transform, Load) automatisé pou
 
 ### Objectifs
 - Collecter les données de **consommation énergétique française** (API RTE)
-- Récupérer les données de **production solaire photovoltaïque** (API RTE)  
+- Récupérer les données de **productions** (API RTE)  
 - Intégrer les **données météorologiques** (OpenWeatherMap)
 - Automatiser le traitement et le stockage des données
 - Fournir une base de données consolidée pour l'analyse et la prédiction
-
-## Architecture du Système
-
-![Architecture du Système](images/architecture_etl.png)
 
 ### Stack Technique
 
 - **Orchestrateur** : Apache Airflow 2.10.5
 - **Base de données** : PostgreSQL 13
-- **Cache/Broker** : Redis 7.2
 - **Containerisation** : Docker & Docker Compose
-- **Langage** : Python 3.x
+- **Langage** : Python 3.12
 - **Librairies principales** : pandas, requests, python-dotenv
 
-## Prérequis
-
-### Système
-- Docker Engine 20.10+
-- Docker Compose 2.0+
-- 4GB RAM minimum
-- 10GB d'espace disque libre
 
 ### Comptes API requis
 1. **Compte RTE** : [digital.iservices.rte-france.com](https://digital.iservices.rte-france.com)
@@ -52,8 +40,8 @@ _AIRFLOW_WWW_USER_PASSWORD=airflow
 
 # API OpenWeatherMap
 METEO_API_KEY=votre_cle_openweathermap
-LAT=48.8566          # Latitude Paris
-LON=2.3522           # Longitude Paris
+LAT=48.8566          
+LON=2.3522           
 
 # Configuration PostgreSQL (optionnel, utilise les valeurs par défaut)
 POSTGRES_USER=airflow
@@ -61,143 +49,6 @@ POSTGRES_PASSWORD=airflow
 POSTGRES_DB=airflow
 ```
 
-### 2. Variables Météo (NOUVEAU)
-
-Configurez les variables pour le DAG météo :
-
-#### **Méthode Automatique (Recommandée)**
-```bash
-# Configuration interactive
-./scripts/setup_weather_variables.sh -i
-
-# Configuration directe avec clé API
-./scripts/setup_weather_variables.sh -k "votre_cle_api_openweathermap"
-```
-
-#### **Méthode Manuelle via Interface Web**
-1. Ouvrez `http://localhost:8080`
-2. Allez dans **Admin > Variables**
-3. Ajoutez :
-   - **Key**: `METEO_API_KEY` **Value**: `votre_cle_api`
-   - **Key**: `LAT` **Value**: `48.8566` (optionnel, Paris par défaut)
-   - **Key**: `LON` **Value**: `2.3522` (optionnel, Paris par défaut)
-
-#### **Obtenir une Clé API Gratuite**
- [OpenWeatherMap API](https://openweathermap.org/api) (gratuit jusqu'à 1000 calls/jour)
-
-### 3. Contrôle d'Accès Base de Données (NOUVEAU)
-
-Configurez un système de sécurité robuste avec rôles et permissions :
-
-#### **Méthode Automatique (Recommandée)**
-```bash
-# Configuration complète du contrôle d'accès
-./scripts/setup_database_access_control.sh
-
-# Test des permissions seulement
-./scripts/setup_database_access_control.sh -t
-
-# Génération de rapport seulement
-./scripts/setup_database_access_control.sh -r
-```
-
-#### **Rôles et Utilisateurs Créés**
-| **Utilisateur** | **Rôle** | **Permissions** | **Usage** |
-|-----------------|----------|-----------------|-----------|
-| `user_etl_airflow` | Admin | Tous droits | DAGs Airflow |
-| `user_data_analyst` | Analyste | Lecture 6 mois + vues | Analyse de données |
-| `user_readonly` | Lecteur | Lecture 30 jours | Dashboards/monitoring |
-| `user_backup` | Backup | Lecture complète | Sauvegardes |
-
-#### **Sécurité Activée**
-- **Row Level Security (RLS)** : Accès filtré par période selon le rôle
-- **Audit automatique** : Toutes les modifications tracées
-- **Vues sécurisées** : Permissions granulaires par rôle
-- **Fonctions de maintenance** : Changement mot de passe, nettoyage audit
-
-### 4. Connexions Airflow
-
-Après le démarrage d'Airflow, configurez les connexions via l'interface web (`http://localhost:8080`) :
-
-####  Connexion RTE API
-- **Connection Id** : `rte_api`
-- **Connection Type** : `HTTP`
-- **Host** : `digital.iservices.rte-france.com`
-- **Extra** (format JSON) :
-```json
-{
-  "CLIENT_ID": "votre_client_id_consommation",
-  "CLIENT_SECRET": "votre_client_secret_consommation",
-  "CLIENT_ID_2": "votre_client_id_generation",
-  "CLIENT_SECRET_2": "votre_client_secret_generation"
-}
-```
-
-#### Connexions PostgreSQL Sécurisées (Créées Automatiquement)
-- **postgres_etl** : Pour les DAGs ETL (user_etl_airflow)
-- **postgres_backup** : Pour les sauvegardes (user_backup) 
-- **postgres_readonly** : Pour lecture seule (user_readonly)
-- **postgres_default** : Connexion historique (airflow)
-
-## Installation et Déploiement
-
-### 1. Cloner le Projet
-```bash
-git clone <votre-repo>
-cd projet_titre_rncp_data_engineer
-```
-
-### 2. Configuration
-```bash
-# Créer le fichier .env
-cp .env.example .env
-# Éditer .env avec vos clés API
-```
-
-### 3. Démarrage des Services
-```bash
-# Démarrage complet
-docker-compose up -d
-
-# Vérifier les logs
-docker-compose logs -f
-
-# Accéder à l'interface Airflow
-# http://localhost:8080 (airflow/airflow)
-```
-
-### 4. Configuration Post-Installation
-1. Se connecter à Airflow : `http://localhost:8080`
-2. Configurer les connexions (voir section Paramétrage)
-3. Activer les DAGs dans l'interface
-4. Vérifier les premiers runs
-
-## Structure des DAGs
-
-### DAG Energy ETL (`api_etl_dag`)
-**Fréquence** : Quotidienne (`@daily`)
-
-**Pipeline** :
-```
-Début → Extraction → Transformation → Chargement → Fin
-         ├─ Consommation RTE
-         └─ Production Solaire RTE
-```
-
-**Tables créées** :
-- `energies` : timestamp, Consommations (MW), Production_PV (MW)
-
-### DAG Weather ETL (`weather_dag`)  
-**Fréquence** : Horaire (`@hourly`)
-
-**Pipeline** :
-```
-Début → Extraction → Transformation → Stockage → Fin
-        OpenWeatherMap
-```
-
-**Tables créées** :
-- `meteo` : timestamp, Temperature (°C)
 
 ## APIs Utilisées
 
@@ -209,26 +60,25 @@ Début → Extraction → Transformation → Stockage → Fin
 - **Granularité** : 15 minutes
 - **Format** : JSON
 
-#### Production Solaire
+#### Production
 - **Endpoint** : `/open_api/actual_generation/v1/actual_generations_per_production_type`
-- **Données** : Production par filière (focus solaire photovoltaïque)
-- **Granularité** : 15 minutes  
+- **Données** : Production par filière (focus sur 4 sources "SOLAR", "BIOMASS", "WIND_ONSHORE", "NUCLEAR")
+- **Granularité** : 1 heure 
 - **Format** : JSON
 
 ### 2. OpenWeatherMap API
 - **Endpoint** : `/data/2.5/weather`
 - **Données** : Météo actuelle (température, humidité, pression, vent)
-- **Fréquence** : Temps réel
+- **Fréquence** : 1 heure
 - **Format** : JSON
 
 ## Base de Données
 
-### Table `energies`
+### Table `consommation`
 ```sql
-CREATE TABLE energies (
+CREATE TABLE consommation (
     timestamp TIMESTAMP PRIMARY KEY,
     Consommations FLOAT NOT NULL CHECK (Consommations >= 0),
-    Production_PV FLOAT NOT NULL CHECK (Production_PV >= 0),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -237,7 +87,7 @@ CREATE TABLE energies (
 ```sql
 CREATE TABLE meteo (
     timestamp TIMESTAMP PRIMARY KEY,
-    Temperature FLOAT
+    temperature FLOAT
 );
 ```
 
@@ -264,130 +114,12 @@ docker-compose logs airflow-worker
 docker-compose exec postgres psql -U airflow -d airflow
 
 # Vérification des données
-SELECT COUNT(*) FROM energies;
+SELECT COUNT(*) FROM consommation;
 SELECT * FROM meteo ORDER BY timestamp DESC LIMIT 10;
 ```
 
-### Surveillance Sécurité
-```bash
-# Voir les connexions actives par utilisateur
-docker-compose exec postgres psql -U airflow -d airflow -c "SELECT * FROM active_connections;"
 
-# Consulter l'audit de sécurité (7 derniers jours)
-docker-compose exec postgres psql -U airflow -d airflow -c "SELECT * FROM security_audit_summary;"
 
-# Vérifier les permissions par rôle
-docker-compose exec postgres psql -U airflow -d airflow -c "SELECT table_name, privilege_type, grantee FROM information_schema.table_privileges WHERE table_schema = 'public' AND grantee LIKE '%energie%';"
-
-# Tester l'accès avec un utilisateur spécifique
-docker-compose exec postgres psql -U user_readonly -d airflow -c "SELECT COUNT(*) FROM daily_energy_summary;"
-```
-
-## Maintenance
-
-### Mise à jour des Dépendances
-```bash
-# Rebuild avec nouvelles dépendances
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-### Nettoyage
-```bash
-# Arrêt des services
-docker-compose down
-
-# Nettoyage complet 
-docker-compose down -v
-docker system prune -a
-```
-
-### Backup Base de Données
-```bash
-# Export PostgreSQL
-docker-compose exec postgres pg_dump -U airflow airflow > backup_$(date +%Y%m%d).sql
-
-# Restauration
-docker-compose exec -T postgres psql -U airflow airflow < backup_20241201.sql
-```
-
-## Dépannage
-
-### Problèmes Courants
-
-#### 1. Variables d'environnement météo manquantes
-```bash
-# ERREUR: Variables d'environnement manquantes: METEO_API_KEY, LAT, ou LON
-
-# SOLUTION: Configurez les variables Airflow
-./scripts/setup_weather_variables.sh -i
-
-# OU via interface web:
-# http://localhost:8080 → Admin → Variables → Ajouter METEO_API_KEY
-```
-
-#### 2. Erreur de Token RTE
-```bash
-# Vérifier les connexions Airflow
-# Régénérer les tokens sur le portail RTE
-```
-
-#### 3. Manque de Mémoire
-```bash
-# Augmenter les ressources Docker
-# Minimum 4GB RAM recommandé
-```
-
-#### 4. Permissions Airflow
-```bash
-# Corriger les permissions
-sudo chown -R $USER:$USER logs/ dags/ plugins/
-```
-
-#### 5. API Météo inaccessible
-```bash
-# Tester la clé API
-curl "https://api.openweathermap.org/data/2.5/weather?lat=48.8566&lon=2.3522&appid=VOTRE_CLE"
-
-# Vérifier les logs DAG pour plus de détails
-```
-
-#### 6. Erreurs de permissions base de données
-```bash
-# ERREUR: permission denied for table energies
-
-# SOLUTION: Vérifier les rôles et permissions
-docker-compose exec postgres psql -U airflow -d airflow -c "SELECT * FROM active_connections;"
-
-# Reconfigurer le contrôle d'accès si nécessaire
-./scripts/setup_database_access_control.sh
-
-# Tester les permissions par utilisateur
-./scripts/setup_database_access_control.sh -t
-```
-
-#### 7. Connexions Airflow incorrectes
-```bash
-# ERREUR: connection 'postgres_etl' doesn't exist
-
-# SOLUTION: Recréer les connexions sécurisées
-./scripts/setup_database_access_control.sh
-
-# OU manuellement via interface web:
-# http://localhost:8080 → Admin → Connections → Add
-```
-
-#### 8. Audit et sécurité
-```bash
-# Voir qui accède à quoi
-docker-compose exec postgres psql -U airflow -d airflow -c "SELECT * FROM security_audit_summary;"
-
-# Changer un mot de passe utilisateur
-docker-compose exec postgres psql -U airflow -d airflow -c "SELECT change_user_password('user_readonly', 'nouveau_mot_de_passe_securise!');"
-
-# Nettoyer les logs d'audit anciens (90 jours)
-docker-compose exec postgres psql -U airflow -d airflow -c "SELECT cleanup_audit_logs(90);"
-```
 
 ## Ressources
 

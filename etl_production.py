@@ -37,8 +37,9 @@ def daterange(start_date, end_date, delta):
 
 dates = []
 production = []
-start_date = datetime(2020, 1, 1)
-end_date = datetime(2025, 3, 24)
+
+start_date = datetime(2017, 12, 31, 23, 00)
+end_date = datetime(2025, 8, 4, 21, 00)
 five_months = timedelta(days=30*5)
 
 for start, end in daterange(start_date, end_date, five_months):
