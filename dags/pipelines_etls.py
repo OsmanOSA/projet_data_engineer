@@ -347,7 +347,7 @@ def transform_consumption(raw_consumptions: dict) -> pd.DataFrame:
         ).dt.strftime("%Y-%m-%d %H:%M")
         
         # Suppression des doublons
-        dataframe_consumption = dataframe_consumption.drop_duplicates().set_index('timestamp', inplace=True)
+        dataframe_consumption = dataframe_consumption.drop_duplicates().set_index('timestamp')
        
         dataframe_consumption = dataframe_consumption.fillna(
             dataframe_consumption.interpolate(method='linear')).reset_index()
@@ -434,13 +434,9 @@ def transform_productions(raw_productions):
         
         # Conversion de la colonne date en datetime avec fuseau horaire UTC
         dataframe_productions['timestamp'] = pd.to_datetime(
-            dataframe_productions["timestamp"], 
-            format="%Y-%m-%dT%H:%M:%S%z", 
-            utc=True
-        ).dt.strftime("%Y-%m-%d %H:%M")
-        
-        # Définir l'index pour cohérence (optionnel pour le solaire)
-        dataframe_productions.set_index('timestamp', inplace=True)
+            dataframe_productions["timestamp"],  utc=True
+        ).dt.strftime("%Y-%m-%d %H:%M").set_index('timestamp')
+
         dataframe_productions.fillna(
             dataframe_productions.interpolate(method='linear'), inplace=True)
         
