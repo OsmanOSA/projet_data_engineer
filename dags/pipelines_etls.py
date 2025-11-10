@@ -1,5 +1,4 @@
 import os
-import base64
 import requests
 import pandas as pd
 import time
@@ -11,21 +10,23 @@ from dotenv import load_dotenv
 from airflow import DAG #type: ignore
 from airflow.utils.task_group import TaskGroup #type: ignore
 from airflow.operators.dummy_operator import DummyOperator #type: ignore
-from airflow.hooks.base import BaseHook #type: ignore
 from airflow.providers.postgres.hooks.postgres import PostgresHook #type: ignore
 from airflow.decorators import task #type: ignore
 from airflow.exceptions import AirflowException #type: ignore
 from airflow.models import Variable #type: ignore
+
+
+from src.constant import (POSTGRES_CONN_ID, 
+                          BASE_URL_CONSO, 
+                          BASE_URL_PROD)
+
+from src.main_utils.utils import get_rte_access_token, make_api_request
 
 # Configuration du logging
 os.environ["AIRFLOW__LOGGING__ENABLE_TASK_INSTANCE_LOGGING"] = "True"
 logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
-
-# Paramètres du DAG
-POSTGRES_CONN_ID = "postgres_default"
-API_CONN_ID = "rte_api"
 
 default_args = {
     "owner": "airflow",
@@ -35,119 +36,6 @@ default_args = {
     "email_on_failure": False,
     "email_on_retry": False
 }
-
-# Constantes pour une meilleure maintenance
-MAX_RETRIES = 5
-RETRY_DELAY = 2
-REQUEST_TIMEOUT = 30
-
-def get_rte_access_token(type_energy_api="energy_consumption"):
-    """
-    Récupère un token d'authentification depuis l'API RTE.
-
-    Parameters
-    ----------
-    type_energy_api : str, optional
-        Type d'API à utiliser. Doit être 'energy_consumption' ou 
-        'generations_per_production_type', by default "energy_consumption"
-
-    Returns
-    -------
-    str
-        Token d'accès Bearer pour l'authentification API
-
-    Raises
-    ------
-    ValueError
-        Si le type d'API n'est pas supporté ou si les identifiants sont manquants
-    AirflowException
-        En cas d'erreur réseau ou d'échec de récupération du token
-    """
-    try:
-        # Configuration API RTE
-        TOKEN_URL = "https://digital.iservices.rte-france.com/token/oauth/"
-        data = {"grant_type": "client_credentials"}
-        
-        conn = BaseHook.get_connection(API_CONN_ID)
-        
-        if type_energy_api == "energy_consumption":
-            client_id = conn.extra_dejson.get("CLIENT_ID")
-            client_secret = conn.extra_dejson.get("CLIENT_SECRET")
-        elif type_energy_api == "generations_per_production_type":
-            client_id = conn.extra_dejson.get("CLIENT_ID_2")
-            client_secret = conn.extra_dejson.get("CLIENT_SECRET_2")
-        else:
-            raise ValueError(f"Type d'API non supporté: {type_energy_api}")
-
-        if not client_id or not client_secret:
-            raise ValueError(f"Identifiants manquants pour {type_energy_api}")
-
-        auth_str = f"{client_id}:{client_secret}"
-        auth_b64 = base64.b64encode(auth_str.encode()).decode()
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Authorization": f"Basic {auth_b64}",
-        }
-        
-        response = requests.post(TOKEN_URL, data=data, headers=headers, timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
-        
-        token = response.json().get("access_token")
-        if not token:
-            raise AirflowException("Token d'accès non trouvé dans la réponse")
-            
-        logging.info(f"Token RTE récupéré avec succès pour {type_energy_api}")
-        return token
-        
-    except requests.exceptions.RequestException as e:
-        raise AirflowException(f"Erreur réseau lors de la récupération du token RTE: {str(e)}")
-    except Exception as e:
-        raise AirflowException(f"Erreur token API RTE: {str(e)}")
-
-def make_api_request(url, headers, max_retries=MAX_RETRIES):
-    """
-    Effectue une requête API avec retry automatique et backoff exponentiel.
-
-    Parameters
-    ----------
-    url : str
-        URL de l'API à interroger
-    headers : dict
-        Headers HTTP à inclure dans la requête
-    max_retries : int, optional
-        Nombre maximum de tentatives, by default MAX_RETRIES
-
-    Returns
-    -------
-    dict
-        Réponse JSON de l'API
-
-    Raises
-    ------
-    AirflowException
-        En cas d'échec après toutes les tentatives ou d'erreur critique
-    """
-    for attempt in range(max_retries):
-        try:
-            response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
-            
-            if response.status_code == 200:
-                logging.info(f"Requête API réussie: {url}")
-                return response.json()
-            elif response.status_code == 429:  # Rate limiting
-                wait_time = RETRY_DELAY ** (attempt + 1)
-                logging.warning(f"Rate limit atteint, attente de {wait_time}s")
-                time.sleep(wait_time)
-            else:
-                logging.warning(f"Tentative {attempt + 1}: Code {response.status_code}")
-                
-        except requests.exceptions.RequestException as e:
-            logging.warning(f"Tentative {attempt + 1}: Erreur réseau - {str(e)}")
-            
-        if attempt < max_retries - 1:
-            time.sleep(RETRY_DELAY ** attempt)
-    
-    raise AirflowException(f"Échec de la requête API après {max_retries} tentatives: {url}")
 
 @task
 def extract_energy_consumption():
@@ -170,8 +58,9 @@ def extract_energy_consumption():
     """
     try:
         # Récupération du token
-        token = get_rte_access_token()
-        
+        token = get_rte_access_token(type_energy_api="energy_consumption")
+        logging.info(f"Le token pour l'API de consommation est {token}")
+
         # Headers API
         api_headers = {
             "Host": "digital.iservices.rte-france.com",
@@ -179,9 +68,7 @@ def extract_energy_consumption():
             "Accept": "application/json"
         }
         
-        endpoint = "https://digital.iservices.rte-france.com/open_api/consumption/v1/short_term?type=REALISED"
-        
-        data = make_api_request(endpoint, api_headers)
+        data = make_api_request(url=BASE_URL_CONSO, headers=api_headers)
         logging.info("Données de consommation récupérées avec succès")
         return data
         
@@ -211,22 +98,23 @@ def extract_productions():
     try:
         # Récupérer le token pour l'API de génération
         token = get_rte_access_token(type_energy_api="generations_per_production_type")
+        logging.info(f"Le token pour l'API de génération est {token}")
 
+        # Headers API
         api_headers = {
             "Host": "digital.iservices.rte-france.com",
             "Authorization": f"Bearer {token}",
             "Accept": "application/json"
         }
-
-        endpoint = "https://digital.iservices.rte-france.com/open_api/actual_generation/v1/actual_generations_per_production_type"
         
-        data = make_api_request(endpoint, api_headers)
-        logging.info("Données de production solaire récupérées avec succès")
+        data = make_api_request(url=BASE_URL_PROD, headers=api_headers)
+        logging.info("Données de productions récupérées avec succès")
+
         return data
         
     except Exception as e:
-        logging.error(f"Erreur lors de l'extraction solaire: {str(e)}")
-        raise AirflowException(f"Échec extraction solaire: {str(e)}")
+        logging.error(f"Erreur lors de l'extraction productions: {str(e)}")
+        raise AirflowException(f"Échec extraction productions: {str(e)}")
 
 
 @task
@@ -250,11 +138,15 @@ def extract_weather_data():
     try:
         # Récupération des variables via Airflow Variables (priorité) puis environnement
         try:
+
             API_KEY = Variable.get("METEO_API_KEY", default_var=os.getenv("METEO_API_KEY"))
-            LAT = Variable.get("LAT", default_var=os.getenv("LAT", "48.8566"))  
-            LON = Variable.get("LON", default_var=os.getenv("LON", "2.3522"))   
+            LAT = Variable.get("LAT", default_var=os.getenv("LAT"))  
+            LON = Variable.get("LON", default_var=os.getenv("LON"))  
+
         except Exception as var_error:
+
             logging.warning(f"Erreur accès Variables Airflow: {var_error}, fallback sur variables d'environnement")
+
             API_KEY = os.getenv("METEO_API_KEY")
             LAT = os.getenv("LAT", "48.8566")
             LON = os.getenv("LON", "2.3522")  
@@ -322,7 +214,7 @@ def transform_consumption(raw_consumptions: dict) -> pd.DataFrame:
     """
     try:
         if not raw_consumptions or 'short_term' not in raw_consumptions:
-            logging.error(f"EDonnées de consommation invalides ou manqunates")
+            logging.error(f"Données de consommation invalides ou manqunates")
             raise ValueError("Données de consommation invalides ou manquantes")
         
         values = raw_consumptions['short_term'][0]['values']
@@ -338,29 +230,29 @@ def transform_consumption(raw_consumptions: dict) -> pd.DataFrame:
             for entry in values if entry.get("start_date") and entry.get("value") is not None
         ]
 
-        dataframe_consumption = pd.DataFrame(df_list)
+        df_conso = pd.DataFrame(df_list)
         
         # Conversion de la colonne date en datetime
-        dataframe_consumption['timestamp'] = pd.to_datetime(
-            dataframe_consumption["timestamp"], 
+        df_conso['timestamp'] = pd.to_datetime(
+            df_conso["timestamp"], 
             utc=True
         ).dt.strftime("%Y-%m-%d %H:%M")
         
         # Suppression des doublons
-        dataframe_consumption = dataframe_consumption.drop_duplicates().set_index('timestamp')
+        df_conso = df_conso.drop_duplicates().set_index('timestamp')
        
-        dataframe_consumption = dataframe_consumption.fillna(
-            dataframe_consumption.interpolate(method='linear')).reset_index()
+        df_conso = df_conso.fillna(
+            df_conso.interpolate(method='linear')).reset_index()
         
-        logging.info(f"Transformation consommation terminée: {len(dataframe_consumption)} enregistrements")
-        return dataframe_consumption
+        logging.info(f"Transformation consommation terminée: {len(df_conso)} enregistrements")
+        return df_conso
         
     except Exception as e:
         logging.error(f"Erreur transformation consommation: {str(e)}")
         raise AirflowException(f"Échec transformation consommation: {str(e)}")
 
 @task
-def transform_productions(raw_productions):
+def transform_productions(raw_productions: dict):
     """
     Transforme les données de production solaire extraites en DataFrame pandas.
 
@@ -435,22 +327,24 @@ def transform_productions(raw_productions):
         # Conversion de la colonne date en datetime avec fuseau horaire UTC
         dataframe_productions['timestamp'] = pd.to_datetime(
             dataframe_productions["timestamp"],  utc=True
-        ).dt.strftime("%Y-%m-%d %H:%M").set_index('timestamp')
-
-        dataframe_productions.fillna(
-            dataframe_productions.interpolate(method='linear'), inplace=True)
+        ).dt.strftime("%Y-%m-%d %H:%M")
         
-        dataframe_productions.reset_index(inplace=True)
+        df_prod = pd.DataFrame(dataframe_productions).set_index('timestamp')
 
-        logging.info(f"Transformation solaire terminée: {len(dataframe_productions)} enregistrements")
-        return dataframe_productions
+        df_prod.fillna(
+            df_prod.interpolate(method='linear'), inplace=True)
+        
+        df_prod.reset_index(inplace=True)
+
+        logging.info(f"Transformation solaire terminée: {len(df_prod)} enregistrements")
+        return df_prod
         
     except Exception as e:
         logging.error(f"Erreur transformation solaire: {str(e)}")
         raise AirflowException(f"Échec transformation solaire: {str(e)}")
 
 @task
-def transform_weather_data(raw_weather_data):
+def transform_weather_data(raw_weather_data: dict):
     """
     Transforme les données météo brutes en format structuré simplifié.
 
@@ -496,6 +390,7 @@ def transform_weather_data(raw_weather_data):
             transformed_data.interpolate(method='linear'), inplace=True)
         transformed_data.reset_index(inplace=True)
         logging.info(f"Données météo transformées: {transformed_data}")
+
         return transformed_data
     
     except Exception as e:
@@ -503,7 +398,9 @@ def transform_weather_data(raw_weather_data):
         raise
 
 @task(task_id="load_datasets")
-def load_datasets(dataframe_consump, dataframe_productions, dataframe_temp):
+def load_datasets(dataframe_consump: pd.DataFrame, 
+                  dataframe_productions: pd.DataFrame,
+                  dataframe_temp: pd.DataFrame):
     """
     Charge les données transformées dans la base de données PostgreSQL.
 
@@ -629,7 +526,7 @@ def load_datasets(dataframe_consump, dataframe_productions, dataframe_temp):
 with DAG(
     dag_id='api_etl_dag', 
     default_args=default_args, 
-    description='Pipeline ETL pour la collecte de données énergétiques depuis l\'API RTE',
+    description="Pipeline ETL pour la collecte de données depuis les APIs",
     schedule="@hourly",
     catchup=False,
     max_active_runs=1,
@@ -639,13 +536,13 @@ with DAG(
     start_pipeline = DummyOperator(
         task_id='Pipeline_collection_data_is_ready',
         doc_md="""
-        ## Début du Pipeline ETL Énergétique
+        ## Début du Pipeline ETL
         
-        Ce pipeline collecte quotidiennement:
+        Ce pipeline collecte chaque heure:
         - Données de consommation énergétique française
-        - Données de production solaire photovoltaïque
-        
-        Source: API RTE (Réseau de Transport d'Électricité)
+        - Données de productions (SOLAR, WIND_ONSHORE, 
+                                  NUCLEAR, BIOMASS)
+        - Données de température.
         """
     )
     
@@ -654,16 +551,22 @@ with DAG(
         doc_md="Pipeline ETL terminé avec succès"
     )
 
-    with TaskGroup("Data_ingestion", tooltip="Extraction des données depuis les APIs") as extract_group: 
+    with TaskGroup("Data_ingestion", 
+                   tooltip="Extraction des données") as extract_group: 
+        
         raw_consumption = extract_energy_consumption()
         raw_productions = extract_productions()
         raw_weather_data = extract_weather_data()
 
-    with TaskGroup("Transform_datasets", tooltip="Transformation et nettoyage des données") as transform_group:
+    with TaskGroup("Transform_datasets", 
+                   tooltip="Transformation des données") as transform_group:
+        
         transformed_consumption = transform_consumption(raw_consumption)
         transformed_productions = transform_productions(raw_productions)
         transformed_temperature = transform_weather_data(raw_weather_data)
 
-    load = load_datasets(transformed_consumption, transformed_productions, transformed_temperature)
+    load = load_datasets(transformed_consumption, 
+                         transformed_productions, 
+                         transformed_temperature)
         
     start_pipeline >> extract_group >> transform_group >> load >> end_pipeline

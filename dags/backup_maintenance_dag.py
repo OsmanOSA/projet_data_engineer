@@ -14,11 +14,12 @@ from airflow.operators.bash import BashOperator
 from airflow.exceptions import AirflowException
 from airflow.utils.task_group import TaskGroup
 
+from src.constant import POSTGRES_CONN_ID
+
 # Configuration logging
 logging.basicConfig(level=logging.INFO)
 
 # Paramètres du DAG
-POSTGRES_CONN_ID = "postgres_default"
 BACKUP_DIR = "/opt/airflow/backups"
 RETENTION_DAYS = 30
 MAX_BACKUP_SIZE_MB = 500
@@ -65,7 +66,7 @@ def check_database_health():
                         n_tup_ins + n_tup_upd + n_tup_del as total_operations,
                         pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
                     FROM pg_stat_user_tables 
-                    WHERE tablename IN ('energies', 'meteo')
+                    WHERE tablename IN ('consommation', 'productions', 'meteo')
                     ORDER BY total_operations DESC;
                 """)
                 
@@ -136,6 +137,7 @@ def backup_database(backup_directory: str):
         En cas d'échec de la sauvegarde
     """
     try:
+        
         timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
         backup_filename = f"backup_airflow_{timestamp}.sql"
         backup_filepath = os.path.join(backup_directory, backup_filename)
@@ -168,7 +170,7 @@ def backup_database(backup_directory: str):
                 stdout=backup_file, 
                 stderr=subprocess.PIPE,
                 env=env,
-                timeout=1800,  # 30 minutes max
+                timeout=10,  # (1800secondes) 30 minutes max
                 check=True
             )
         
@@ -195,9 +197,11 @@ def backup_database(backup_directory: str):
         
     except subprocess.TimeoutExpired:
         raise AirflowException("Timeout de sauvegarde (30 minutes dépassées)")
+    
     except subprocess.CalledProcessError as e:
         stderr_output = e.stderr.decode() if e.stderr else "Erreur inconnue"
         raise AirflowException(f"Échec pg_dump: {stderr_output}")
+    
     except Exception as e:
         logging.error(f"Erreur lors de la sauvegarde: {str(e)}")
         raise AirflowException(f"Sauvegarde échouée: {str(e)}")
