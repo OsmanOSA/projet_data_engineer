@@ -2,10 +2,9 @@ import os
 import requests
 import pandas as pd
 import time
-import pendulum #type: ignore
 import logging
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
 from airflow import DAG #type: ignore
 from airflow.utils.task_group import TaskGroup #type: ignore
@@ -16,9 +15,9 @@ from airflow.exceptions import AirflowException #type: ignore
 from airflow.models import Variable #type: ignore
 
 
-from src.constant import (POSTGRES_CONN_ID, 
-                          BASE_URL_CONSO, 
-                          BASE_URL_PROD)
+from src.constant import (POSTGRES_CONN_ID, BASE_URL_CONSO, 
+                          BASE_URL_PROD, DEFAULT_ARGS, DAG_ID, 
+                          FREQ_COLLECTE)
 
 from src.main_utils.utils import get_rte_access_token, make_api_request
 
@@ -27,15 +26,6 @@ os.environ["AIRFLOW__LOGGING__ENABLE_TASK_INSTANCE_LOGGING"] = "True"
 logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
-
-default_args = {
-    "owner": "airflow",
-    "start_date": pendulum.today('UTC').subtract(days=1),
-    "retries": 5,
-    "retry_delay": timedelta(minutes=1),
-    "email_on_failure": False,
-    "email_on_retry": False
-}
 
 @task
 def extract_energy_consumption():
@@ -524,10 +514,10 @@ def load_datasets(dataframe_consump: pd.DataFrame,
 
 # Définition du DAG avec métadonnées enrichies
 with DAG(
-    dag_id='api_etl_dag', 
-    default_args=default_args, 
+    dag_id=DAG_ID, 
+    default_args=DEFAULT_ARGS, 
     description="Pipeline ETL pour la collecte de données depuis les APIs",
-    schedule="@hourly",
+    schedule=FREQ_COLLECTE,
     catchup=False,
     max_active_runs=1,
     tags=['energy', 'etl', 'rte', 'production']
@@ -551,7 +541,7 @@ with DAG(
         doc_md="Pipeline ETL terminé avec succès"
     )
 
-    with TaskGroup("Data_ingestion", 
+    with TaskGroup("Extract_datasets", 
                    tooltip="Extraction des données") as extract_group: 
         
         raw_consumption = extract_energy_consumption()
