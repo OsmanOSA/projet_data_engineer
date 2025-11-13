@@ -1,3 +1,10 @@
+![Python](https://img.shields.io/badge/python-3.12-3776AB)
+![Platform](https://img.shields.io/badge/platform-Windows-0078D6)
+![Airflow](https://img.shields.io/badge/built%20with-Apache%20Airflow-017CEE)
+[![PostgreSQL](https://img.shields.io/badge/built%20with-PostgreSQL-336791)](https://www.postgresql.org/)
+[![Docker Compose](https://img.shields.io/badge/built%20with-Docker%20Compose-2496ED)](https://docs.docker.com/compose/)
+
+
 # Projet - Data Engineer
 
 ## Description du Projet
@@ -10,6 +17,10 @@ Ce projet implémente un pipeline ETL (Extract, Transform, Load) automatisé pou
 - Intégrer les **données météorologiques** (OpenWeatherMap)
 - Automatiser le traitement et le stockage des données
 - Fournir une base de données consolidée pour l'analyse et la prédiction
+
+### Architecture du projet 
+
+![Architecture](images/image.png)
 
 ### Stack Technique
 
