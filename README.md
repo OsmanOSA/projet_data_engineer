@@ -20,7 +20,7 @@ Ce projet implémente un pipeline ETL (Extract, Transform, Load) automatisé pou
 
 ### Architecture du projet 
 
-![Architecture](images/image.png)
+![Architecture](images/Architecture_ETL.svg)
 
 ### Stack Technique
 
@@ -138,4 +138,5 @@ SELECT * FROM meteo ORDER BY timestamp DESC LIMIT 10;
 - [API RTE Documentation](https://digital.iservices.rte-france.com/apis)
 - [OpenWeatherMap API](https://openweathermap.org/api)
 - [Docker Compose Guide](https://docs.docker.com/compose/)
+
 
